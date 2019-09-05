@@ -1,0 +1,52 @@
+data dataA;
+   format LastName $CHAR9.;
+   input LastName $ Age TasteScore Flavor $ Layers FlavorCode $;
+   datalines;
+Orlando     27 80  Vanilla    1   Van
+Ramey       32 72  Carrot     2   Other
+Goldston    46 75  Vanilla    1   Van
+Roe         38 73  Vanilla    2   Van
+Larsen      23 84  Chocolate  1   Other
+Davis       51 91  Spice      3   Other
+Strickland  19 79  Chocolate  1   Other
+Nguyen      57 84  Vanilla    3   Van
+Hildenbrand 33 83  Chocolate  1   Other
+;
+run;
+
+data myData;
+   input x y $ z;
+   datalines;
+ 1 A 27
+ 1 A 33
+ 1 B 45
+ 2 A 52
+ 2 B 69
+ 3 B 70
+ 3 A 82
+ 3 C 91
+;
+run;
+
+data two;
+    set myData;
+    by x;
+    if first.x then delete;
+    if last.x then delete;
+ run;
+
+proc sort data=dataA out=dataA;
+	by LastName;
+	format LastName $CHAR9.;
+run;
+
+proc sort data=dataB out=dataB;
+	by LastName;
+	format LastName $CHAR15.;
+run;
+
+data merged;
+    merge dataA dataB;
+    by LastName;
+    format name $char12.;
+ run;

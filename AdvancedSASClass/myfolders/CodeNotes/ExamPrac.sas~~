@@ -1,0 +1,63 @@
+data employees;
+   format Age 8.3;
+   input LastName $ Age TasteScore Flavor $ Layers FlavorCode $;
+   datalines;
+Orlando     27 80  Vanilla    1   Van
+Ramey       32 72  Carrot     2   Other
+Goldston    46 75  Vanilla    1   Van
+Roe         38 73  Vanilla    2   Van
+Larsen      23 84  Chocolate  1   Other
+Davis       51 91  Spice      3   Other
+Strickland  19 79  Chocolate  1   Other
+Nguyen      57 84  Vanilla    3   Van
+Hildenbrand 33 83  Chocolate  1   Other
+;
+run;
+
+data sales;
+   format Age dollar6.2;
+   input LastName $ Age TasteScore Flavor $ Layers FlavorCode $;
+   datalines;
+Byron       62 87  Vanilla    2   Van
+Sanders     26 79  Chocolate  1   Other
+Jaeger      43 74  Vanilla    1   Van
+Davis       28 75  Chocolate  2   Other
+Conrad      69 94  Vanilla    1   Van
+Walters     55 72  Chocolate  2   Other
+Rossburger  28 81  Spice      2   Other
+Matthew     42 92  Chocolate  2   Other
+Becker      36 83  Spice      2   Other
+Anderson    27 85  Chocolate  1   Other
+Merritt     62 84  Chocolate  1   Other
+;
+run;
+
+proc sort data=employees out=employees;
+	by Age;
+run;
+
+proc sort data=sales out=sales;
+	by Age;
+run;
+ 
+data merged;
+    merge employees sales;
+    by Age;
+    format LastName $char12.;
+ run;
+ 
+ data wally;
+    if AmountDue=. then
+    AmountDue=100;
+    AdditionalFees=50;
+    AmountDue=.;
+    TotalDue=(AmountDue+AdditionalFees)+0;
+ run;
+ 
+ proc sort data=diamonds.storage;
+ run;
+
+ proc print data=diamonds.storage;
+    var size color purity;
+    where status='uncut';
+ run;

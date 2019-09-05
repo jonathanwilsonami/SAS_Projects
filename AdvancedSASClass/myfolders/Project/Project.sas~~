@@ -1,0 +1,143 @@
+/*Final Project
+*Author Jonathan Wilson
+*Date 11/7/2018
+*/
+
+/*Read in data sets*/
+%let path=/folders/myfolders/Project; 
+libname project "&path";
+
+/*Creating the domains data set*/
+data domainsA;
+	infile "&path/Domains FormA.csv" dlm=',' firstobs=2 dsd;
+	input ItemId Domain :$255. DomainNum QuestionNum;/*Domain :$255. use this to capture a long string of chars*/
+run;
+
+data domainsB;
+	infile "&path/Domains FormB.csv" dlm=',' firstobs=2 dsd;
+	input ItemId Domain :$255. DomainNum QuestionNum;/*Domain :$255. use this to capture a long string of chars*/
+run;
+
+/*Creating the answers data sets*/
+data FormAanswers;
+	infile "&path/FormA.csv" dlm=',' obs=1;
+	input qID $ (Q1-Q150) ($);
+run;
+
+data FormBanswers;
+	infile "&path/FormB.csv" dlm=',' obs=1;
+	input qID $ (Q1-Q150) ($);
+run;
+
+/*Creating the tests data sets*/
+data FormAtests;
+	infile "&path/FormA.csv" dlm=',' firstobs=2 dsd;
+	input sID (Q1-Q150) ($);/*Use columns(array) to count the number of columns in Excel. (Q1-Q150) ($) is a char range*/
+run;
+
+data FormBtests;
+	infile "&path/FormB.csv" dlm=',' firstobs=2 dsd;
+	input sID (Q1-Q150) ($);/*Use columns(array) to count the number of columns in Excel. (Q1-Q150) ($) is a char range*/
+run;
+
+/*Step 1*/
+/*Calculate the answers for each test: Form A*/
+data resultsA;
+	set FormAanswers FormAtests;
+	
+	array tests(150) $1 Q1-Q150;
+	array key(150) $1 k1-k150;
+	array match(150) m1-m150;
+	
+	retain k1-k150;
+	
+/* 	populate key array */
+	if qID = "AAAAKEY" then do;
+		do i = 1 to 150;
+			key(i) = tests(i);
+		end;
+	end;
+	
+	else do;
+		do QuestionNum= 1 to 150;
+			if key(QuestionNum) ne tests(QuestionNum) then match(QuestionNum) = 0;
+			else match(QuestionNum) = 1;
+			matches = match(QuestionNum);
+			output;
+		end;
+	end;
+	keep matches QuestionNum sID;
+run;
+
+/*Calculate the answers for each test: Form B*/
+data resultsB;
+	set FormBanswers FormBtests;
+	
+	array tests(150) $1 Q1-Q150;
+	array key(150) $1 k1-k150;
+	array match(150) m1-m150;
+	
+	retain k1-k150;
+	
+/* 	populate key array */
+	if qID = "BBBBKEY" then do;
+		do i = 1 to 150;
+			key(i) = tests(i);
+		end;
+	end;
+	
+	else do;
+		do QuestionNum= 1 to 150;
+			if key(QuestionNum) ne tests(QuestionNum) then match(QuestionNum) = 0;
+			else match(QuestionNum) = 1;
+			matches = match(QuestionNum);
+			output;
+		end;
+	end;
+	keep matches QuestionNum sID;
+run;
+
+/*Merge domains and results STEP 2*/
+/*Set A*/
+data domainsMergeResultsA;
+	merge resultsA domainsA;
+run;
+
+/*Set B*/
+data domainsMergeResultsB;
+	merge resultsB domainsB;
+run;
+
+/*Combine merged sets STEP 3*/
+data combinedMerge;
+	merge domainsMergeResultsA domainsMergeResultsB;
+	by sID;
+	remain = mod(sID, 2);
+        if remain=0 then
+        	Form='B';
+        else Form='A'; 
+    drop remain;
+run;
+
+/*STEP 4*/
+/*Aggregations on results: Students*/
+proc means data=combinedMerge sum mean nonobs noprint maxdec=0;
+	by sID ;
+   var matches;
+   class sID DomainNum;
+   ID Form;
+   
+   output out=studentResults (drop=_TYPE_ _FREQ_)
+      mean=percent sum=score; 
+run;
+
+proc sort data=studentResults out=sortedStudentResults;
+	by sID;
+run;
+
+proc print data=sortedStudentResults label;
+	var sID DomainNum Form percent score;
+	label score='StudentScores' sID='Student' percent='StudentPercents';
+run;
+
+/*Aggregations on results: questions*/
